@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace dmw::core
+namespace common_dmw
 {
 /** Encode (x,y,z) 10 bits chacun → Morton 30 b */
 [[nodiscard]]

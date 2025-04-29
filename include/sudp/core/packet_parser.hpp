@@ -5,7 +5,7 @@
  */
 #include "packet_header.hpp"
 #include "voxel.hpp"
-#include <span>
+#include <span> // Requires C++20
 #include <stdexcept>
 
 namespace common_dmw
@@ -39,7 +39,7 @@ inline ParsedPacket parse_packet(const void* data, std::size_t size)
         static_cast<const uint8_t*>(data) + sizeof(PacketHeader);
 
     auto vox_span = std::span<const Voxel>(
-        reinterpret_cast<const Voxel*>(payload), hdr->count);
+        reinterpret_cast<const Voxel*>(payload), static_cast<std::size_t>(hdr->count));
 
     return {hdr, vox_span};
 }

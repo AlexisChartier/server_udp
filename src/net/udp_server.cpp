@@ -5,11 +5,8 @@ namespace sudp::net
 {
 
 UdpServer::UdpServer(uint16_t port, db::PgPipeline& db, std::size_t n_workers)
-
     : socket_{io_, asio::ip::udp::endpoint(asio::ip::udp::v4(), port)}
-
     , db_{db}
-
     , pool_{n_workers}
 
 {

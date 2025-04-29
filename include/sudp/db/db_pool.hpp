@@ -58,4 +58,3 @@ private:
     std::vector<bool>       busy_;
 };
 } // namespace sudp::db
-s

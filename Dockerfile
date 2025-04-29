@@ -6,20 +6,9 @@ RUN apt-get update && apt-get install -y \
     cmake \
     libpqxx-dev \
     libpq-dev \
-    libssl-dev \
-    libboost-all-dev \
-    libgtest-dev \
-    gtest \
-    libgtest-dev \
-    libboost-test-dev \
-    libboost-filesystem-dev \
-    libboost-system-dev \
-    libboost-thread-dev \
-    libboost-program-options-dev \
+    libasio-dev \
     pkg-config \
     git \
-    libxml2-dev \
-    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
     WORKDIR /usr/src/app
@@ -27,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     COPY . .
 
     RUN mkdir build && cd build && cmake .. && make
+    RUN cmake -s . -B build && cmake --build build
 
     WORKDIR /usr/src/app/build
     CMD ["./server_udp", "--help"]

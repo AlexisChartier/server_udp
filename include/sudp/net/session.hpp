@@ -1,5 +1,5 @@
 #pragma once
-#include "common_dmw/packet_parser.hpp"
+#include "sudp/core/packet_parser.hpp"
 #include "util/lockfree_queue.hpp"
 #include <vector>
 
@@ -22,13 +22,6 @@ using BatchQueue = util::LockfreeQueue<VoxBatch, QN>;
 class Session
 {
 public:
-    Session(const uint8_t* data, std::size_t len, BatchQueue<>& q)
-    {
-        auto pkt = common_dmw::parse_packet(data, len);
-        VoxBatch batch;
-        batch.drone_id = pkt.hdr->drone_id;
-        batch.vox.assign(pkt.voxels.begin(), pkt.voxels.end());
-        q.push(batch);                 // ignore si queue pleine
-    }
+    Session(const uint8_t* data, std::size_t len, BatchQueue<>& q);
 };
 } // namespace sudp::net

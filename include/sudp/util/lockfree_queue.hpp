@@ -2,14 +2,10 @@
 #include <cstddef>
 #include <optional>
 
-#if __has_include(<boost/lockfree/queue.hpp>)
-  #include <boost/lockfree/queue.hpp>
-  #define SUDP_HAS_BOOST_LOCKFREE 1
-#else
-  #include <mutex>
-  #include <deque>
-  #define SUDP_HAS_BOOST_LOCKFREE 0
-#endif
+#include <mutex>
+#include <deque>
+#define SUDP_HAS_BOOST_LOCKFREE 0
+
 
 namespace sudp::util
 {

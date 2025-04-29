@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-namespace dmw::core
+namespace common_dmw
 {
 struct Voxel
 {
