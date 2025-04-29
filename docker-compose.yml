@@ -15,4 +15,24 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
-  
+
+  map-server:
+    build:
+      context: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: ros_db
+      UDP_PORT: 9000
+    ports:
+      - "9000:9000"
+    restart: on-failure
+    command: ["./udp_server"]
+    
+volumes:
+  db_data:

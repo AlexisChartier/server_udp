@@ -1,0 +1,9 @@
+.git
+.gitignore
+docker-compose.yml
+build/
+CMakeFiles/
+CMakeCache.txt
+*.log
+*.md
+*.DS_Store

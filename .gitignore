@@ -1,0 +1,14 @@
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+/udp_server
+
+*.log
+*.tmp
+*.swp
+*.DS_Store
+
+.vscode/
