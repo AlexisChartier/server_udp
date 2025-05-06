@@ -4,9 +4,11 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     libpq-dev \
-    libpqxx-dev \
     pkg-config \
     git \
+    g++ \
+    libssl-dev \
+    zlib1g-dev \
     wget
 
 # Installer libpqxx en source
