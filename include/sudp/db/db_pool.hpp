@@ -1,6 +1,6 @@
 #pragma once
 /**
- *  Pool « pauvre mais thread-safe » de connexions libpqxx.
+ *  Pool « pauvre mais thread-safe » de connexions libpq.
  *  Un thread worker ↔ une connexion PostgreSQL.
  *
  *  Usage :
@@ -19,6 +19,7 @@
 
 namespace sudp::db
 {
+using PGconnPtr = std::unique_ptr<PGconn, void(*)(PGconn*)>;
 class DbPool
 {
 public:
@@ -33,7 +34,7 @@ public:
             : pool_{g.pool_}, conn_{std::exchange(g.conn_, nullptr)} {}
         ~Guard() { if (conn_) pool_.release(conn_); }
 
-        PGconn*& operator*()  noexcept { return *conn_; }
+        PGconn* operator*()  noexcept { return *conn_; }
         PGconn* operator->() noexcept { return  conn_; }
 
         Guard(const Guard&) = delete;
@@ -52,7 +53,7 @@ public:
 private:
     void release(PGconn*);
 
-    std::vector<std::unique_ptr<PGconn>> conns_;
+    std::vector<PGconnPtr> conns_;
     std::mutex              m_;
     std::condition_variable cv_;
     std::vector<bool>       busy_;

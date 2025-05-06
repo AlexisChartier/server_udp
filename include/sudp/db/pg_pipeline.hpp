@@ -2,7 +2,7 @@
 /**
  *  Insertion par lots dans la table `voxels`
  *  – décode Morton 10 × 3 → (x,y,z)
- *  – utilise COPY BINARY via libpqxx::stream_to
+ *  – utilise COPY BINARY via libpq
  */
 #include "db_pool.hpp"
 #include "sudp/core/voxel.hpp"

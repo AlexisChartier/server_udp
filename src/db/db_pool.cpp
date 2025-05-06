@@ -36,7 +36,7 @@ DbPool::Guard DbPool::acquire()
     throw std::runtime_error("DbPool: no available connection after wait");
 }
 
-void DbPool::release(pqxx::connection* conn)
+void DbPool::release(PGconn* conn)
 {
     std::lock_guard lock(m_);
     for (std::size_t i = 0; i < conns_.size(); ++i)

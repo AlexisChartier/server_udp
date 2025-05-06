@@ -28,10 +28,8 @@ static void write_copy_footer(std::string& buffer) {
 
 void PgPipeline::insert_bulk(const std::vector<common_dmw::Voxel>& voxels) {
     auto conn_guard = pool_.acquire();
-    pqxx::connection& conn = *conn_guard;
-
-    PGconn* raw_conn = conn.conn();
-
+    PGconn* raw_conn = *conn_guard;
+    
     if (PQputCopyStart(raw_conn, "COPY voxels (x,y,z,r,g,b) FROM STDIN BINARY") != 1) {
         throw std::runtime_error("COPY start failed: " + std::string(PQerrorMessage(raw_conn)));
     }
