@@ -11,7 +11,7 @@ DbPool::DbPool(std::string conninfo, std::size_t size)
 
     for (std::size_t i = 0; i < size; ++i)
     {
-        conns_.emplace_back(std::make_unique<pqxx::connection>(conninfo));
+        conns_.emplace_back(PQconnectdb(conninfo.c_str()), PQfinish);
         busy_.push_back(false);
     }
 }

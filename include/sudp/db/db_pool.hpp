@@ -11,7 +11,7 @@
  *          ...
  *      }                                   // retour auto dans le pool
  */
-#include <pqxx/pqxx>
+#include <libpq-fe.h>
 #include <vector>
 #include <mutex>
 #include <condition_variable>
@@ -28,19 +28,19 @@ public:
     class Guard
     {
     public:
-        Guard(DbPool& p, pqxx::connection* c) : pool_{p}, conn_{c} {}
+        Guard(DbPool& p, PGconn* c) : pool_{p}, conn_{c} {}
         Guard(Guard&& g) noexcept
             : pool_{g.pool_}, conn_{std::exchange(g.conn_, nullptr)} {}
         ~Guard() { if (conn_) pool_.release(conn_); }
 
-        pqxx::connection& operator*()  noexcept { return *conn_; }
-        pqxx::connection* operator->() noexcept { return  conn_; }
+        PGconn*& operator*()  noexcept { return *conn_; }
+        PGconn* operator->() noexcept { return  conn_; }
 
         Guard(const Guard&) = delete;
         Guard& operator=(const Guard&) = delete;
     private:
         DbPool&            pool_;
-        pqxx::connection*  conn_;
+        PGconn*  conn_;
     };
 
     /** bloque tant qu’une connexion n’est pas libre */
@@ -50,9 +50,9 @@ public:
     DbPool(const DbPool&) = delete;
     DbPool& operator=(const DbPool&) = delete;
 private:
-    void release(pqxx::connection*);
+    void release(PGconn*);
 
-    std::vector<std::unique_ptr<pqxx::connection>> conns_;
+    std::vector<std::unique_ptr<PGconn>> conns_;
     std::mutex              m_;
     std::condition_variable cv_;
     std::vector<bool>       busy_;

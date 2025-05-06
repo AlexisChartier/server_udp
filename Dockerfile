@@ -1,6 +1,8 @@
 FROM ubuntu:22.04
 
-RUN apt-get update && apt-get install -y \
+RUN sed -i 's|http://archive.ubuntu.com|http://security.ubuntu.com|g' /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y  g++\
     build-essential \
     cmake \
     libpq-dev \
@@ -11,14 +13,6 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     wget
 
-# Installer libpqxx en source
-RUN cd /tmp && \
-    wget https://github.com/jtv/libpqxx/archive/refs/tags/7.7.5.tar.gz && \
-    tar xvf 7.7.5.tar.gz && \
-    cd libpqxx-7.7.5 && \
-    cmake -S . -B build -DCMAKE_CXX_STANDARD=20 && \
-    cmake --build build && \
-    cmake --install build
 
 WORKDIR /usr/src/app
 COPY . .
