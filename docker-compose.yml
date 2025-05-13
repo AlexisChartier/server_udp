@@ -33,7 +33,7 @@ services:
     ports:
       - "9000:9000"
     restart: on-failure
-    command: ["./udp_server"]
+    command: ["./server_udp"]
     
 volumes:
   db_data:
