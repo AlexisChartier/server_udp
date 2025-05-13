@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(server_udp)
 
+
+
 find_package(PostgreSQL REQUIRED)
 include_directories(${PostgreSQL_INCLUDE_DIRS})
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Pour debug : meilleure lisibilité des erreurs
@@ -25,8 +27,9 @@ file(GLOB_RECURSE SRC_FILES src/*.cpp)
 
 # Création de l'exécutable
 add_executable(server_udp ${SRC_FILES})
-
+target_compile_features(server_udp PRIVATE cxx_std_17)
 target_link_libraries(server_udp PRIVATE ${PostgreSQL_LIBRARIES})
 
 # Pour ASIO (header-only si standalone, sinon trouve Boost Asio si besoin)
 target_link_libraries(server_udp PRIVATE pthread)
+target_compile_definitions(server_udp PRIVATE ASIO_STANDALONE)

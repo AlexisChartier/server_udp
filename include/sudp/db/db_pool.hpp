@@ -34,7 +34,7 @@ public:
             : pool_{g.pool_}, conn_{std::exchange(g.conn_, nullptr)} {}
         ~Guard() { if (conn_) pool_.release(conn_); }
 
-        PGconn* operator*()  noexcept { return *conn_; }
+        PGconn* operator*()  noexcept { return conn_; }
         PGconn* operator->() noexcept { return  conn_; }
 
         Guard(const Guard&) = delete;

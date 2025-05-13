@@ -1,5 +1,9 @@
 #include "db/pg_pipeline.hpp"
+#define PG_FUNCTION_ARGS
+extern "C" {
+#include <libpq/libpq-fs.h>
 #include <libpq-fe.h>
+}
 #include <cstring>
 #include <stdexcept>
 
@@ -16,8 +20,8 @@ static void write_binary_int16(std::string& buffer, int16_t value) {
 }
 
 static void write_copy_header(std::string& buffer) {
-    static const char signature[11] = "PGCOPY\n\377\r\n\0";
-    buffer.append(signature, 11);
+    static const char signature[12] = "PGCOPY\n\377\r\n\0";
+    buffer.append(signature, 12);
     buffer.append(4, '\0'); // Flags
     buffer.append(4, '\0'); // Header extension length
 }
@@ -29,8 +33,8 @@ static void write_copy_footer(std::string& buffer) {
 void PgPipeline::insert_bulk(const std::vector<common_dmw::Voxel>& voxels) {
     auto conn_guard = pool_.acquire();
     PGconn* raw_conn = *conn_guard;
-    
-    if (PQputCopyStart(raw_conn, "COPY voxels (x,y,z,r,g,b) FROM STDIN BINARY") != 1) {
+
+    if (PQexec(raw_conn, "COPY voxels (x,y,z,r,g,b) FROM STDIN BINARY") != nullptr) {
         throw std::runtime_error("COPY start failed: " + std::string(PQerrorMessage(raw_conn)));
     }
 
@@ -44,14 +48,16 @@ void PgPipeline::insert_bulk(const std::vector<common_dmw::Voxel>& voxels) {
         uint32_t x, y, z;
         common_dmw::decode_morton10(v.morton, x, y, z);
 
-        for (int val : {
-                static_cast<int>(x),
-                static_cast<int>(y),
-                static_cast<int>(z),
-                static_cast<int16_t>((v.rgb >> 16) & 0xFF),
-                static_cast<int16_t>((v.rgb >> 8) & 0xFF),
-                static_cast<int16_t>(v.rgb & 0xFF)
-            }) {
+        std::array<int32_t, 6> values = {
+            static_cast<int32_t>(x),
+            static_cast<int32_t>(y),
+            static_cast<int32_t>(z),
+            static_cast<int32_t>((v.rgb >> 16) & 0xFF),
+            static_cast<int32_t>((v.rgb >> 8) & 0xFF),
+            static_cast<int32_t>(v.rgb & 0xFF)
+        };
+        
+        for (int32_t val : values) {
             std::string field;
             if (val > 32767 || val < -32768) {
                 uint32_t i = htonl(val);

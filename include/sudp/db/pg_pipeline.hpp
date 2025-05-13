@@ -7,6 +7,7 @@
 #include "db_pool.hpp"
 #include "sudp/core/voxel.hpp"
 #include "sudp/core/morton.hpp"
+#include <arpa/inet.h>
 #include <vector>
 
 namespace sudp::db

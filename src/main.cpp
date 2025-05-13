@@ -1,8 +1,12 @@
-include "db/db_pool.hpp"
+#include <iostream>
+#include <stdexcept>
+#include <thread>
+#include <chrono>
 
+#include "db/db_pool.hpp"
 #include "db/pg_pipeline.hpp"
-
 #include "net/udp_server.hpp"
+
 
 int main()
 
@@ -22,7 +26,7 @@ int main()
 
         // Lance le serveur UDP
 
-        sudp::net::UdpServer server(9000, pipeline);
+        sudp::net::UdpServer server(9000, pipeline, std::thread::hardware_concurrency());
 
         // Exécute le serveur (boucle infinie)
 
