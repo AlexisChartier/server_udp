@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <thread>
 #include <chrono>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "db/db_pool.hpp"
 #include "db/pg_pipeline.hpp"
@@ -29,7 +31,7 @@ int main()
         sudp::net::UdpServer server(9000, pipeline, std::thread::hardware_concurrency());
 
         // Exécute le serveur (boucle infinie)
-
+        std::cout << "Server is running on port 9000...\n";
         server.run();
     }
     catch (const std::exception& e)
