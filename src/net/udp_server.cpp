@@ -40,9 +40,9 @@ void UdpServer::start_receive()
         {
 
             if (!ec && len > 0) {
-
+                std::cout << "[UDP] Received " << len << " bytes from "
+                          << remote_.address().to_string() << ":" << remote_.port() << '\n';
                 pool_.post([this, len] {
-
                     Session{rx_buf_.data(), len, queue_};
 
                 });
