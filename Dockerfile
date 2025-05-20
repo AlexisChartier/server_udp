@@ -5,6 +5,8 @@ RUN sed -i 's|http://archive.ubuntu.com|http://security.ubuntu.com|g' /etc/apt/s
 RUN apt-get update && apt-get install -y  g++\
     build-essential \
     cmake \
+    liboctomap-dev \
+    libz-dev \
     libasio-dev \
     libpq-dev \
     pkg-config \
