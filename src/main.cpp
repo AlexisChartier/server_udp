@@ -12,8 +12,14 @@
 
 int main() {
     try {
+        std::cout.setf(std::ios::unitbuf); // flush stdout after each output
+        std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
+        std::cout << "[MAIN] Starting server...\n";
+        std::cout << "[MAIN] Initializing...\n";
+        std::cout << "[MAIN] Initializing database connection...\n";
+        
         // Connexion PostgreSQL (pool de connexions)
-        sudp::db::DbPool db_pool("postgresql://user:password@db:5432/mydb", 4);
+        sudp::db::DbPool db_pool("postgresql://user:password@db:5432/ros_db", 4);
 
         // File partagée pour les données réassemblées (points ou blobs)
         sudp::net::DbQueue db_queue;

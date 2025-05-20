@@ -9,7 +9,7 @@ UdpServer::UdpServer(uint16_t port, DbQueue& queue, std::size_t n_workers)
     , queue_{queue}
     , pool_{n_workers}
 {
-    std::cout << "[INFO] UDP server initialized on port " << port << "\n";
+    std::cout << "[INFO] UDP server initialized on port " << port << "\n"<< std::endl;
     start_receive();
 }
 
