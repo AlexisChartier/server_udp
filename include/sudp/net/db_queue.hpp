@@ -40,8 +40,14 @@ public:
     }
 
     /* -------- points (spatial_point) ------------------------- */
-    void push_points(std::vector<PointRGB>&& v)
-    { std::lock_guard lk(m_); batches_.emplace(PointBatch{std::move(v)}); cv_.notify_one(); }
+    void push_points(std::vector<PointRGB>&& v){ 
+        std::cout.setf(std::ios::unitbuf); // flush stdout after each output
+        std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
+
+        std::cout << "[DB] Received batch with " << v.size() << " points and pushing\n";
+                  
+        std::lock_guard lk(m_); batches_.emplace(PointBatch{std::move(v)}); cv_.notify_one(); 
+    }
 
     std::optional<PointBatch> try_pop_batch()
     {

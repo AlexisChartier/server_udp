@@ -16,6 +16,8 @@ Session::Session(asio::ip::udp::socket&& sock, DbQueue& dbq, std::size_t mtu)
 }
 
 void Session::read_next() {
+    std::cout.setf(std::ios::unitbuf); // flush stdout after each output
+    std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
     recv_buf_.resize(mtu_ + sizeof(core::UdpHdr));
     socket_.async_receive_from(
         asio::buffer(recv_buf_), remote_,
@@ -26,6 +28,8 @@ void Session::read_next() {
 }
 
 void Session::handle_packet(std::size_t nbytes) {
+    std::cout.setf(std::ios::unitbuf); // flush stdout after each output
+    std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
     if (nbytes < sizeof(core::UdpHdr)) return;
 
     const auto* hdr = reinterpret_cast<const core::UdpHdr*>(recv_buf_.data());
@@ -56,10 +60,13 @@ void Session::handle_packet(std::size_t nbytes) {
     ss.write(reinterpret_cast<char*>(blob.data()), blob.size());
     ss.seekg(0);
 
-    std::unique_ptr<octomap::AbstractOcTree> at{octomap::AbstractOcTree::read(ss)};
-    auto* tree = dynamic_cast<octomap::OcTree*>(at.get());
-    if (!tree) return;
-
+    auto tree = std::make_unique<octomap::OcTree>(0.1);
+    if (!tree->readBinary(ss)) {
+        std::cerr << "[SESSION] Failed to read octree from blob\n";
+        return;
+    }
+    std::cout << "[SESSION] zebi :" << tree->getTreeType() << "\n";
+   
     const int64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
@@ -67,7 +74,11 @@ void Session::handle_packet(std::size_t nbytes) {
     pts.reserve(tree->size());
 
     for (auto it = tree->begin_leafs(); it != tree->end_leafs(); ++it) {
-        if (!tree->isNodeOccupied(*it)) continue;
+        std::cout << "[SESSION] Octree stats: "
+                  << "size=" << tree->size()
+                  <<" | leafs=" << tree->getNumLeafNodes()
+                  << std::endl;
+       // if (!tree->isNodeOccupied(*it)) continue;
         db::PointRGB p;
         p.x = it.getX(); p.y = it.getY(); p.z = it.getZ();
         p.r = 128; p.g = 128; p.b = 128; p.a = 255;
@@ -75,8 +86,12 @@ void Session::handle_packet(std::size_t nbytes) {
         pts.push_back(p);
     }
 
-    if (!pts.empty())
+    if (!pts.empty()){
+        std::cout << "[SESSION] pushing batch of" << pts.size() << "points to DB queue \n";
         db_queue_.push_points(std::move(pts));
+    } else {
+        std::cout << "[SESSION] No occupied points to insert. \n";
+    }
 }
 
 } // namespace sudp::net

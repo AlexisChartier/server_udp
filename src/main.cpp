@@ -7,7 +7,7 @@
 #include "db/db_pool.hpp"
 #include "db/spatial_pipeline.hpp"
 #include "net/db_queue.hpp"
-#include "net/session.hpp"         // ← ou udp_server.hpp si tu gardes l'ancienne version
+#include "net/session.hpp"      
 #include "util/thread_pool.hpp"
 
 int main() {
@@ -39,9 +39,13 @@ int main() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                         continue;
                     }
+                    std::cout << "[DB Worker] Received batch with" << batch->pts.size() << " points \n";
 
-                    for (auto& pt : batch->pts)
+                    for (auto& pt : batch->pts){
+                        std::cout << "[DB Worker] Pushing point to pipeline\n";
+                        std::cout << "[DB Worker] Point: " << pt.x << ", " << pt.y << ", " << pt.z << "\n";
                         pipe.push(std::move(pt));
+                    } 
                 }
             });
         }

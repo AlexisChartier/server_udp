@@ -24,7 +24,7 @@ public:
 
     void push(uint8_t drone_id, uint32_t seq, uint8_t flags, const std::vector<uint8_t>& blob) {
         rows_.emplace_back(drone_id, seq, flags, blob);
-        if (rows_.size() >= batch_size_) flush(false);
+        if (rows_.size() >= batch_size_) flush(true);
     }
 
 private:
@@ -39,6 +39,8 @@ private:
     };
 
     void flush(bool force) {
+        std::cout.setf(std::ios::unitbuf); // flush stdout after each output
+        std::cerr.setf(std::ios::unitbuf);
         if (rows_.empty() && !force) return;
 
         PGresult* res = PQexec(conn_, "COPY scans_binary (drone_id, seq, flags, data) FROM STDIN BINARY");

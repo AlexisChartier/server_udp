@@ -37,6 +37,8 @@ public:
 private:
     void worker_loop()
     {
+        std::cout.setf(std::ios::unitbuf); // flush stdout after each output
+        std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
         while (!stop_)
         {
             std::function<void()> job;
