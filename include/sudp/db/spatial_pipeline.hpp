@@ -19,7 +19,7 @@ struct PointRGB
 class SpatialPipeline
 {
 public:
-    SpatialPipeline(PGconn* conn, std::size_t batch = 10'000)
+    SpatialPipeline(PGconn* conn, std::size_t batch = 1)
         : conn_(conn), batch_size_(batch) {}
     void push(PointRGB&& p) {
         rows_.emplace_back(std::move(p));
@@ -39,7 +39,7 @@ private:
         }
         std::cout << "[DB-Spatial-pip] flushing " << rows_.size() << " points\n";
         PGresult* res = PQexec(conn_,
-            "COPY spatial_point (x,y,z,color_r,color_g,color_b,color_a,timestamp,nb_records) FROM STDIN WITH (FORMAT text)");
+            "COPY spatial_points (x,y,z,color_r,color_g,color_b,color_a,timestamp,nb_records) FROM STDIN WITH (FORMAT text)");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
             std::cerr << "[DB] COPY command failed: " << PQerrorMessage(conn_) << '\n';
             PQclear(res);

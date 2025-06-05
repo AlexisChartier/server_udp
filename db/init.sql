@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS spatial_points (
     color_b INTEGER NOT NULL,
     color_a INTEGER NOT NULL,
     timestamp BIGINT NOT NULL,
+    nb_records INTEGER,
     PRIMARY KEY (x, y, z)
 );
 CREATE TABLE IF NOT EXISTS scans_binary (

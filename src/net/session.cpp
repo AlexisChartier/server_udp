@@ -80,7 +80,7 @@ void Session::handle_packet(std::size_t nbytes) {
                   << std::endl;
        // if (!tree->isNodeOccupied(*it)) continue;
         db::PointRGB p;
-        p.x = it.getX(); p.y = it.getY(); p.z = it.getZ();
+        p.x = std::round(it.getX()); p.y = std::round(it.getY()); p.z = std::round(it.getZ());
         p.r = 128; p.g = 128; p.b = 128; p.a = 255;
         p.ts = now_ms;
         pts.push_back(p);
