@@ -40,10 +40,9 @@ int main() {
                         continue;
                     }
                     std::cout << "[DB Worker] Received batch with" << batch->pts.size() << " points \n";
-
+                    std::cout << "[DB Worker] Pushing point to pipeline\n";
                     for (auto& pt : batch->pts){
-                        std::cout << "[DB Worker] Pushing point to pipeline\n";
-                        std::cout << "[DB Worker] Point: " << pt.x << ", " << pt.y << ", " << pt.z << "\n";
+                        //std::cout << "[DB Worker] Point: " << pt.x << ", " << pt.y << ", " << pt.z << "\n";
                         pipe.push(std::move(pt));
                     } 
                 }

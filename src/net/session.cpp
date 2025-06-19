@@ -65,19 +65,18 @@ void Session::handle_packet(std::size_t nbytes) {
         std::cerr << "[SESSION] Failed to read octree from blob\n";
         return;
     }
-    std::cout << "[SESSION] zebi :" << tree->getTreeType() << "\n";
+
    
     const int64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
     std::vector<db::PointRGB> pts;
     pts.reserve(tree->size());
-
+    std::cout << "[SESSION] Octree stats: "
+    << "size=" << tree->size()
+    <<" | leafs=" << tree->getNumLeafNodes()
+    << std::endl;
     for (auto it = tree->begin_leafs(); it != tree->end_leafs(); ++it) {
-        std::cout << "[SESSION] Octree stats: "
-                  << "size=" << tree->size()
-                  <<" | leafs=" << tree->getNumLeafNodes()
-                  << std::endl;
        // if (!tree->isNodeOccupied(*it)) continue;
         db::PointRGB p;
         p.x = std::round(it.getX()); p.y = std::round(it.getY()); p.z = std::round(it.getZ());

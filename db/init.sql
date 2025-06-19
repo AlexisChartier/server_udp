@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS spatial_points (
 CREATE TABLE IF NOT EXISTS scans_binary (
     drone_id SMALLINT NOT NULL,
     seq INTEGER,
-    flags BYTEA,
+    flags SMALLINT,
+    data BYTEA NOT NULL,
     created_at TIMESTAMP DEFAULT now()
 );
 
