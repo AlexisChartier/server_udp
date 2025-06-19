@@ -8,31 +8,16 @@
 
 namespace sudp::db {
 
-struct PointRGB
-{
-    float   x, y, z;
+struct PointRGB {
+    float x, y, z;
     uint8_t r, g, b, a;
-    int64_t ts;  // epoch‑ms
+    int64_t ts; // epoch-ms
 };
 
-class SpatialPipeline
-{
+class SpatialPipeline {
 public:
     SpatialPipeline(PGconn* conn, std::size_t batch = 1)
-        : conn_(conn), batch_size_(batch)
-    {
-        const char* stmtName = "insert_spatial_point";
-        const char* insertSQL =
-            "INSERT INTO spatial_points (x, y, z, color_r, color_g, color_b, color_a, timestamp, nb_records) "
-            "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) "
-            "ON CONFLICT (x,y,z) DO UPDATE SET nb_records = spatial_points.nb_records + EXCLUDED.nb_records";
-
-        PGresult* prep = PQprepare(conn_, stmtName, insertSQL, 9, nullptr);
-        if (PQresultStatus(prep) != PGRES_COMMAND_OK) {
-            std::cerr << "[DB] Prepare failed: " << PQerrorMessage(conn_) << '\n';
-        }
-        PQclear(prep);
-    }
+        : conn_(conn), batch_size_(batch) {}
 
     void push(PointRGB&& p) {
         rows_.emplace_back(std::move(p));
@@ -41,49 +26,46 @@ public:
         }
     }
 
-    ~SpatialPipeline() { flush(); }
+    ~SpatialPipeline() {
+        flush();
+    }
 
 private:
     void flush() {
         if (rows_.empty()) return;
+
         std::cout << "[DB-Spatial-pip] flushing " << rows_.size() << " points\n";
-        const char* stmtName = "insert_spatial_point";
 
-        for (const auto& p : rows_) {
-            const char* values[9];
-            int lengths[9];
-            int formats[9];
+        std::ostringstream query;
+        query << "INSERT INTO spatial_points "
+              << "(x, y, z, color_r, color_g, color_b, color_a, timestamp, nb_records) VALUES ";
 
-            std::string x = std::to_string(static_cast<int>(p.x));
-            std::string y = std::to_string(static_cast<int>(p.y));
-            std::string z = std::to_string(static_cast<int>(p.z));
-            std::string r = std::to_string(p.r);
-            std::string g = std::to_string(p.g);
-            std::string b = std::to_string(p.b);
-            std::string a = std::to_string(p.a);
-            std::string ts = std::to_string(p.ts);
-            std::string count = "1";
-
-            values[0] = x.c_str();
-            values[1] = y.c_str();
-            values[2] = z.c_str();
-            values[3] = r.c_str();
-            values[4] = g.c_str();
-            values[5] = b.c_str();
-            values[6] = a.c_str();
-            values[7] = ts.c_str();
-            values[8] = count.c_str();
-
-            for (int i = 0; i < 9; ++i) {
-                lengths[i] = 0;
-                formats[i] = 0;  // text format
-            }
-            PGresult* res = PQexecPrepared(conn_, stmtName, 9, values, lengths, formats, 0);
-            if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-                std::cerr << "[DB] Insert failed: " << PQerrorMessage(conn_) << '\n';
-            }
-            PQclear(res);
+        for (std::size_t i = 0; i < rows_.size(); ++i) {
+            const auto& p = rows_[i];
+            query << "("
+                  << static_cast<int>(p.x) << ","
+                  << static_cast<int>(p.y) << ","
+                  << static_cast<int>(p.z) << ","
+                  << static_cast<int>(p.r) << ","
+                  << static_cast<int>(p.g) << ","
+                  << static_cast<int>(p.b) << ","
+                  << static_cast<int>(p.a) << ","
+                  << p.ts << ","
+                  << 1 << ")";
+            if (i != rows_.size() - 1)
+                query << ",";
         }
+
+        query << " ON CONFLICT (x,y,z) DO UPDATE SET nb_records = spatial_points.nb_records + EXCLUDED.nb_records";
+
+        PGresult* res = PQexec(conn_, query.str().c_str());
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+            std::cerr << "[DB] Bulk insert failed: " << PQerrorMessage(conn_) << '\n';
+        } else {
+            std::cout << "[DB] Bulk insert succeeded\n";
+        }
+
+        PQclear(res);
         rows_.clear();
     }
 
@@ -93,3 +75,4 @@ private:
 };
 
 } // namespace sudp::db
+
