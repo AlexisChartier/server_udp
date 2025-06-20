@@ -30,23 +30,22 @@ int main() {
         // Lance les workers pour spatial_point
         for (int i = 0; i < 2; ++i) {
             db_workers.post([&db_queue, &db_pool] {
-                std::cout << "[DB] Worker thread started\n";
-                sudp::db::SpatialPipeline pipe(*db_pool.acquire());
+                auto guard = db_pool.acquire();               // 1. connexion protégée
+                sudp::db::SpatialPipeline pipe(guard.get(),   // 2. même PGconn*
+                                            1 /* batch size */);
 
                 while (true) {
-                    auto batch = db_queue.try_pop_batch();
-                    if (!batch) {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                        continue;
+                    if (auto batch = db_queue.try_pop_batch(); batch) {
+                        for (auto& pt : batch->pts)
+                            pipe.push(std::move(pt));
+
+                        pipe.flush_pending();                 // flush explicite
+                    } else {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(2));
                     }
-                    std::cout << "[DB Worker] Received batch with" << batch->pts.size() << " points \n";
-                    std::cout << "[DB Worker] Pushing point to pipeline\n";
-                    for (auto& pt : batch->pts){
-                        //std::cout << "[DB Worker] Point: " << pt.x << ", " << pt.y << ", " << pt.z << "\n";
-                        pipe.push(std::move(pt));
-                    } 
                 }
             });
+
         }
 
         // Démarre le serveur UDP (Session = gestionnaire bas-niveau avec ASIO)

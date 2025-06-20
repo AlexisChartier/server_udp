@@ -36,7 +36,7 @@ public:
 
         PGconn* operator*()  noexcept { return conn_; }
         PGconn* operator->() noexcept { return  conn_; }
-
+        PGconn* get() const noexcept { return conn_; } 
         Guard(const Guard&) = delete;
         Guard& operator=(const Guard&) = delete;
     private:
