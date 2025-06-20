@@ -36,6 +36,7 @@ int main() {
             for (auto& p : points) {
                 drone_pipelines[drone_id]->push(std::move(p));
             }
+            drone_pipelines[drone_id]->flush_pending();
         };
 
         // Lancement de la session UDP (async)

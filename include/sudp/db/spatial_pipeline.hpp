@@ -32,7 +32,7 @@ struct PointRGB {
 
 class SpatialPipeline {
 public:
-    SpatialPipeline(PGconn* conn, std::size_t batch = 1000)
+    SpatialPipeline(PGconn* conn, std::size_t batch = 10000)
         : conn_(conn), batch_size_(batch) {}
 
     void push(PointRGB&& p) {
@@ -45,11 +45,14 @@ public:
     ~SpatialPipeline() {
         flush();
     }
+    void flush_pending() {
+            flush();
+    }
 
 private:
     void flush() {
         if (rows_.empty()) return;
-
+        
         auto start = std::chrono::high_resolution_clock::now();
         std::cout << "[DB-Spatial-pip] Flushing " << rows_.size() << " raw points\n";
 
@@ -70,6 +73,7 @@ private:
             }
         }
 
+        std::cout << "[DB-Spatial-pip] Fused " << fused.size() << " unique points\n";
         // Étape 2 : construire la requête SQL
         std::ostringstream query;
         query << "INSERT INTO spatial_points "
