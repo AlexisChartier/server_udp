@@ -5,18 +5,20 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <chrono>
 
 namespace sudp::db {
 
 struct PointRGB {
     float x, y, z;
     uint8_t r, g, b, a;
+    int nb_records = 1; // default to 1 for the first insert
     int64_t ts; // epoch-ms
 };
 
 class SpatialPipeline {
 public:
-    SpatialPipeline(PGconn* conn, std::size_t batch = 1)
+    SpatialPipeline(PGconn* conn, std::size_t batch = 1000)
         : conn_(conn), batch_size_(batch) {}
 
     void push(PointRGB&& p) {
@@ -33,6 +35,8 @@ public:
 private:
     void flush() {
         if (rows_.empty()) return;
+
+        auto start = std::chrono::high_resolution_clock::now();
 
         std::cout << "[DB-Spatial-pip] flushing " << rows_.size() << " points\n";
 
@@ -67,6 +71,10 @@ private:
 
         PQclear(res);
         rows_.clear();
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        std::cout << "[DB-Spatial-pip] Flush took " << duration_ms << " ms\n";
     }
 
     PGconn* conn_;
