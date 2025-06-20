@@ -1,27 +1,31 @@
 #pragma once
-#include "sudp/core/packet_parser.hpp"
-#include "util/lockfree_queue.hpp"
+#include <asio.hpp>
+#include <unordered_map>
+#include <memory>
 #include <vector>
 
-namespace sudp::net
-{
-/** Conteneur prêt pour la BD ------------------------------------- */
-struct VoxBatch
-{
-    uint16_t drone_id;
-    std::vector<common_dmw::Voxel> vox;
-};
+#include "core/udp_header.hpp"
+#include "core/reassembly_buffer.hpp"
+#include "db/spatial_pipeline.hpp"
 
-template<std::size_t QN = 32768>
-using BatchQueue = util::LockfreeQueue<VoxBatch, QN>;
+namespace sudp::net {
 
-/**
- * Transforme un datagramme → VoxBatch et pousse dans la queue partagée.
- * Pas de mémoire dynamique hors du vector (réservé).
- */
-class Session
-{
+class Session {
 public:
-    Session(const uint8_t* data, std::size_t len, BatchQueue<>& q);
+    Session(asio::ip::udp::socket&& sock, std::function<void(const std::string&, std::vector<db::PointRGB>&&)> cb, std::size_t mtu = 1300);
+
+private:
+    void read_next();
+    void handle_packet(std::size_t nbytes);
+    std::function<void(const std::string&, std::vector<db::PointRGB>&&)> on_packet_cb_;
+    asio::ip::udp::socket            socket_;
+    asio::ip::udp::endpoint          remote_;
+    std::vector<uint8_t>             recv_buf_;
+
+    std::size_t                      mtu_;
+
+    using BufPtr = std::unique_ptr<core::ReassemblyBuffer>;
+    std::unordered_map<uint32_t, BufPtr> buffers_;  // seq → buffer
 };
+
 } // namespace sudp::net
