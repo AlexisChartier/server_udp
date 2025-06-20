@@ -83,12 +83,14 @@ void Session::handle_packet(std::size_t nbytes)
 
     for (auto it = tree->begin_leafs(); it != tree->end_leafs(); ++it) {
         db::PointRGB p;
-        p.x = std::round(it.getX());
-        p.y = std::round(it.getY());
-        p.z = std::round(it.getZ());
+        /* --- NE PAS ARRONDIR AU MÈTRE --- */
+        p.x = it.getX();               // ou   int(std::round(it.getX()*100))  pour le cm
+        p.y = it.getY();
+        p.z = it.getZ();
+
         p.r = 128; p.g = 128; p.b = 128; p.a = 255;
         p.ts = now_ms;
-        pts.push_back(p);
+        pts.push_back(std::move(p));
     }
 
     std::cout << "[DEBUG-SESSION] Extracted " << pts.size() << " points from octree.\n";
