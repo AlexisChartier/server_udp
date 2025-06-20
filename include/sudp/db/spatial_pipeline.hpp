@@ -18,7 +18,7 @@ struct PointRGB {
 
 class SpatialPipeline {
 public:
-    SpatialPipeline(PGconn* conn, std::size_t batch = 1000)
+    SpatialPipeline(PGconn* conn, std::size_t batch = 1)
         : conn_(conn), batch_size_(batch) {}
 
     void push(PointRGB&& p) {

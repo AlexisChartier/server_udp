@@ -1,58 +1,45 @@
 #include <iostream>
 #include <stdexcept>
 #include <thread>
+#include <unordered_map>
 
 #include <asio.hpp>
+#include <libpq-fe.h>
 
-#include "db/db_pool.hpp"
 #include "db/spatial_pipeline.hpp"
-#include "net/db_queue.hpp"
-#include "net/session.hpp"      
-#include "util/thread_pool.hpp"
+#include "net/session.hpp"
 
 int main() {
     try {
         std::cout.setf(std::ios::unitbuf); // flush stdout after each output
         std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
         std::cout << "[MAIN] Starting server...\n";
-        std::cout << "[MAIN] Initializing...\n";
-        std::cout << "[MAIN] Initializing database connection...\n";
-        
-        // Connexion PostgreSQL (pool de connexions)
-        sudp::db::DbPool db_pool("postgresql://user:password@db:5432/ros_db", 4);
 
-        // File partagée pour les données réassemblées (points ou blobs)
-        sudp::net::DbQueue db_queue;
+        // Carte : map de drones → pipeline DB
+        std::unordered_map<std::string, std::unique_ptr<sudp::db::SpatialPipeline>> drone_pipelines;
 
-        // ThreadPool pour les workers de BD
-        sudp::util::ThreadPool db_workers(2);  // ← ajustable
-
-        // Lance les workers pour spatial_point
-        for (int i = 0; i < 2; ++i) {
-            db_workers.post([&db_queue, &db_pool] {
-                std::cout << "[DB] Worker thread started\n";
-                sudp::db::SpatialPipeline pipe(*db_pool.acquire());
-
-                while (true) {
-                    auto batch = db_queue.try_pop_batch();
-                    if (!batch) {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                        continue;
-                    }
-                    std::cout << "[DB Worker] Received batch with" << batch->pts.size() << " points \n";
-                    std::cout << "[DB Worker] Pushing point to pipeline\n";
-                    for (auto& pt : batch->pts){
-                        //std::cout << "[DB Worker] Point: " << pt.x << ", " << pt.y << ", " << pt.z << "\n";
-                        pipe.push(std::move(pt));
-                    } 
-                }
-            });
-        }
-
-        // Démarre le serveur UDP (Session = gestionnaire bas-niveau avec ASIO)
+        // Connexions PostgreSQL par drone (clé = ip:port en string)
         asio::io_context io;
         asio::ip::udp::socket sock(io, asio::ip::udp::endpoint(asio::ip::udp::v4(), 9000));
-        sudp::net::Session session(std::move(sock), db_queue);
+
+        auto on_packet = [&](const std::string& drone_id, std::vector<sudp::db::PointRGB>&& points) {
+            if (drone_pipelines.find(drone_id) == drone_pipelines.end()) {
+                std::cout << "[MAIN] Creating pipeline for drone: " << drone_id << "\n";
+                PGconn* conn = PQconnectdb("postgresql://user:password@db:5432/ros_db");
+                if (!conn || PQstatus(conn) != CONNECTION_OK) {
+                    std::cerr << "[DB] Connection failed for drone " << drone_id << ": " << PQerrorMessage(conn) << '\n';
+                    return;
+                }
+                drone_pipelines[drone_id] = std::make_unique<sudp::db::SpatialPipeline>(conn);
+            }
+
+            for (auto& p : points) {
+                drone_pipelines[drone_id]->push(std::move(p));
+            }
+        };
+
+        // Lancement de la session UDP (async)
+        std::unique_ptr<sudp::net::Session> session_ptr = std::make_unique<sudp::net::Session>(std::move(sock), on_packet);
 
         std::cout << "[MAIN] Server is running on port 9000...\n";
         io.run();

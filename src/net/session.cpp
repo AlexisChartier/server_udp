@@ -1,6 +1,7 @@
 #include "net/session.hpp"
 #include "core/udp_header.hpp"
 #include "core/reassembly_buffer.hpp"
+#include "net/drone_manager.hpp"  
 
 #include <octomap/OcTree.h>
 #include <zlib.h>
@@ -10,14 +11,14 @@
 
 namespace sudp::net {
 
-Session::Session(asio::ip::udp::socket&& sock, DbQueue& dbq, std::size_t mtu)
-    : socket_(std::move(sock)), db_queue_(dbq), mtu_(mtu) {
+Session::Session(asio::ip::udp::socket&& sock, std::function<void(const std::string&, std::vector<db::PointRGB>&&)> cb,std::size_t mtu)
+    : socket_(std::move(sock)), mtu_(mtu), on_packet_cb_(std::move(cb)) {
     read_next();
 }
 
 void Session::read_next() {
-    std::cout.setf(std::ios::unitbuf); // flush stdout after each output
-    std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
+    std::cout.setf(std::ios::unitbuf);
+    std::cerr.setf(std::ios::unitbuf);
     recv_buf_.resize(mtu_ + sizeof(core::UdpHdr));
     socket_.async_receive_from(
         asio::buffer(recv_buf_), remote_,
@@ -28,8 +29,8 @@ void Session::read_next() {
 }
 
 void Session::handle_packet(std::size_t nbytes) {
-    std::cout.setf(std::ios::unitbuf); // flush stdout after each output
-    std::cerr.setf(std::ios::unitbuf); // flush stderr after each output
+    std::cout.setf(std::ios::unitbuf);
+    std::cerr.setf(std::ios::unitbuf);
     if (nbytes < sizeof(core::UdpHdr)) return;
 
     const auto* hdr = reinterpret_cast<const core::UdpHdr*>(recv_buf_.data());
@@ -44,7 +45,6 @@ void Session::handle_packet(std::size_t nbytes) {
     std::vector<uint8_t> blob = std::move(buf->data());
     buffers_.erase(hdr->seq);
 
-    // Décompression si nécessaire
     if (hdr->flags & core::FLAG_GZIP) {
         if (blob.size() < 4) return;
         uint32_t raw = *reinterpret_cast<uint32_t*>(blob.data());
@@ -55,7 +55,6 @@ void Session::handle_packet(std::size_t nbytes) {
         blob.swap(out);
     }
 
-    // Lecture de l’OctoMap
     std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
     ss.write(reinterpret_cast<char*>(blob.data()), blob.size());
     ss.seekg(0);
@@ -66,31 +65,38 @@ void Session::handle_packet(std::size_t nbytes) {
         return;
     }
 
-   
     const int64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
     std::vector<db::PointRGB> pts;
     pts.reserve(tree->size());
-    std::cout << "[SESSION] Octree stats: "
-    << "size=" << tree->size()
-    <<" | leafs=" << tree->getNumLeafNodes()
-    << std::endl;
+    std::cout << "[SESSION] Octree stats: size=" << tree->size()
+              << " | leafs=" << tree->getNumLeafNodes() << '\n';
+
     for (auto it = tree->begin_leafs(); it != tree->end_leafs(); ++it) {
-       // if (!tree->isNodeOccupied(*it)) continue;
         db::PointRGB p;
-        p.x = std::round(it.getX()); p.y = std::round(it.getY()); p.z = std::round(it.getZ());
+        p.x = std::round(it.getX());
+        p.y = std::round(it.getY());
+        p.z = std::round(it.getZ());
         p.r = 128; p.g = 128; p.b = 128; p.a = 255;
         p.ts = now_ms;
         pts.push_back(p);
     }
 
-    if (!pts.empty()){
-        std::cout << "[SESSION] pushing batch of" << pts.size() << "points to DB queue \n";
-        db_queue_.push_points(std::move(pts));
+    std::cout << "[DEBUG-SESSION] Extracted " << pts.size() << " points from octree.\n";
+    if (!pts.empty()) {
+        std::ostringstream id;
+        id << remote_.address().to_string() << ":" << remote_.port();
+        if (on_packet_cb_) {
+            std::cout << "[SESSION] Inserting " << pts.size() << " points for drone: " << id.str() << '\n';
+            on_packet_cb_(id.str(), std::move(pts));
+        }else {
+            std::cout << "[SESSION] No callback set for drone: " << id.str() << '\n';
+        }
     } else {
-        std::cout << "[SESSION] No occupied points to insert. \n";
+        std::cout << "[SESSION] No occupied points to insert.\n";
     }
 }
 
 } // namespace sudp::net
+
