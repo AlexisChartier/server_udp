@@ -20,7 +20,6 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
-    networks: [mapnet]
 
   map-server:
     build:
@@ -40,7 +39,6 @@ services:
       - "9000:9000"
     restart: on-failure
     command: ["./server_udp"]
-    networks: [mapnet]
     
 
 volumes:

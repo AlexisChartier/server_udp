@@ -31,10 +31,6 @@ void Session::read_next() {
         });
 }
 
-void Session::handle_packet(std::size_t nbytes) {
-    std::cout.setf(std::ios::unitbuf);
-    std::cerr.setf(std::ios::unitbuf);
-    if (nbytes < sizeof(core::UdpHdr)) return;
 
 void Session::handle_packet(std::size_t nbytes)
 {
@@ -46,25 +42,19 @@ void Session::handle_packet(std::size_t nbytes)
     const uint8_t* body = recv_buf_.data() + sizeof(core::UdpHdr);
 
     auto& buf = buffers_[hdr->seq];
-    if (!buf)
-        buf = std::make_unique<core::ReassemblyBuffer>(hdr->tot);
+    if (!buf) buf = std::make_unique<core::ReassemblyBuffer>(hdr->tot);
 
-    if (!buf->write(hdr->off, body, hdr->len) || !buf->complete())
-        return;                                   // pas fini → on attend
+    if (!buf->write(hdr->off, body, hdr->len) || !buf->complete()) return;                                   
 
     std::vector<uint8_t> blob = std::move(buf->data());
     buffers_.erase(hdr->seq);                     // buffer consommé
 
     if (hdr->flags & core::FLAG_GZIP) {
         if (blob.size() < 4) return;              // 4 oct. = taille brute
-
-        uint32_t raw_len = 0;
-        std::memcpy(&raw_len, blob.data(), 4);
-
-        std::vector<uint8_t> out(raw_len);
-        uLongf dst = raw_len;
-        if (::uncompress(out.data(), &dst,
-                         blob.data() + 4, blob.size() - 4) != Z_OK) {
+        uint32_t raw = *reinterpret_cast<const uint32_t*>(blob.data());
+        std::vector<uint8_t> out(raw);
+        uLongf dst = raw;
+        if (::uncompress(out.data(), &dst, blob.data() + 4, blob.size() - 4) != Z_OK) {
             std::cerr << "[SESSION] zlib-uncompress failed\n";
             return;
         }

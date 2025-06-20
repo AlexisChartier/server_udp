@@ -9,17 +9,6 @@
 #include <unordered_map>
 #include <tuple>
 
-namespace std {
-    template <>
-    struct hash<std::tuple<int, int, int>> {
-        std::size_t operator()(const std::tuple<int, int, int>& t) const {
-            std::size_t h1 = std::hash<int>{}(std::get<0>(t));
-            std::size_t h2 = std::hash<int>{}(std::get<1>(t));
-            std::size_t h3 = std::hash<int>{}(std::get<2>(t));
-            return h1 ^ (h2 << 1) ^ (h3 << 2);
-        }
-    };
-}
 
 namespace std {
     template<>
