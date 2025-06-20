@@ -6,24 +6,22 @@
 
 #include "core/udp_header.hpp"
 #include "core/reassembly_buffer.hpp"
-#include "net/db_queue.hpp"
 #include "db/spatial_pipeline.hpp"
 
 namespace sudp::net {
 
 class Session {
 public:
-    Session(asio::ip::udp::socket&& sock, DbQueue& dbq, std::size_t mtu = 1300);
+    Session(asio::ip::udp::socket&& sock, std::function<void(const std::string&, std::vector<db::PointRGB>&&)> cb, std::size_t mtu = 1300);
 
 private:
     void read_next();
     void handle_packet(std::size_t nbytes);
-
+    std::function<void(const std::string&, std::vector<db::PointRGB>&&)> on_packet_cb_;
     asio::ip::udp::socket            socket_;
     asio::ip::udp::endpoint          remote_;
     std::vector<uint8_t>             recv_buf_;
 
-    DbQueue&                         db_queue_;
     std::size_t                      mtu_;
 
     using BufPtr = std::unique_ptr<core::ReassemblyBuffer>;
@@ -31,4 +29,3 @@ private:
 };
 
 } // namespace sudp::net
-
