@@ -21,25 +21,47 @@ namespace std {
     };
 }
 
-namespace sudp::db {
+namespace std {
+    template<>
+    struct hash<std::tuple<int,int,int>>
+    {
+        std::size_t operator()(const std::tuple<int,int,int>& t) const noexcept
+        {
+            std::size_t h1 = std::hash<int>{}(std::get<0>(t));
+            std::size_t h2 = std::hash<int>{}(std::get<1>(t));
+            std::size_t h3 = std::hash<int>{}(std::get<2>(t));
+            return h1 ^ (h2<<1) ^ (h3<<2);
+        }
+    };
+}
 
+namespace sudp::db
+{
+// ───────────────────────────────────────────────────────────────
+// données
+// ───────────────────────────────────────────────────────────────
 struct PointRGB {
+
     float x, y, z;
     uint8_t r, g, b, a;
     int nb_records = 1;
     int64_t ts;
 };
 
+// ───────────────────────────────────────────────────────────────
+// pipeline
+// ───────────────────────────────────────────────────────────────
 class SpatialPipeline {
 public:
+
     SpatialPipeline(PGconn* conn, std::size_t batch = 10000)
         : conn_(conn), batch_size_(batch) {}
 
-    void push(PointRGB&& p) {
+    void push(PointRGB&& p)
+    {
         rows_.emplace_back(std::move(p));
-        if (rows_.size() >= batch_size_) {
+        if (rows_.size() >= batch_size_)
             flush();
-        }
     }
 
     ~SpatialPipeline() {
@@ -50,12 +72,13 @@ public:
     }
 
 private:
-    void flush() {
+    void flush()
+    {
         if (rows_.empty()) return;
         
         auto start = std::chrono::high_resolution_clock::now();
         std::cout << "[DB-Spatial-pip] Flushing " << rows_.size() << " raw points\n";
-
+      
         // Étape 1 : fusionner les points identiques (x,y,z)
         std::unordered_map<std::tuple<int, int, int>, PointRGB> fused;
         for (const auto& p : rows_) {
@@ -94,7 +117,16 @@ private:
         // Étape 3 : exécuter
         PGresult* res = PQexec(conn_, query.str().c_str());
         if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-            std::cerr << "[DB] Bulk insert failed: " << PQerrorMessage(conn_) << '\n';
+            std::cerr << "[DB] Bulk insert failed: "
+                      << PQerrorMessage(conn_);
+
+            /* tentative de ré-initialisation si la connexion est cassée */
+            if (PQstatus(conn_) == CONNECTION_BAD) {
+                std::cerr << "[DB] resetting connection …\n";
+                PQreset(conn_);
+                if (PQstatus(conn_) != CONNECTION_OK)
+                    std::cerr << "[DB] reset failed!\n";
+            }
         } else {
             std::cout << "[DB] Bulk insert succeeded\n";
         }
@@ -106,10 +138,9 @@ private:
         std::cout << "[DB-Spatial-pip] Flush took " << duration << " ms\n";
     }
 
-    PGconn* conn_;
-    std::size_t batch_size_;
-    std::vector<PointRGB> rows_;
+    PGconn*                conn_;
+    std::size_t            batch_size_;
+    std::vector<PointRGB>  rows_;
 };
 
 } // namespace sudp::db
-
