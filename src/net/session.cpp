@@ -37,7 +37,7 @@ void Session::read_next()
         [this](std::error_code ec, std::size_t n) {
             if (!ec)
                 handle_packet(n);
-            read_next();                             // on se remet en écoute
+            read_next();  // on se remet en écoute
         });
 }
 
