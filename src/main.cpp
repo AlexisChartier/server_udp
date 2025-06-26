@@ -25,7 +25,7 @@ int main() {
         auto on_packet = [&](const std::string& drone_id, std::vector<sudp::db::PointRGB>&& points) {
             if (drone_pipelines.find(drone_id) == drone_pipelines.end()) {
                 std::cout << "[MAIN] Creating pipeline for drone: " << drone_id << "\n";
-                PGconn* conn = PQconnectdb("host=db port=5432 dbnqme=ros_db user=postgres password=pwd");
+                PGconn* conn = PQconnectdb("host=db port=5432 dbname=ros_db user=postgres password=pwd");
                 if (!conn || PQstatus(conn) != CONNECTION_OK) {
                     std::cerr << "[DB] Connection failed for drone " << drone_id << ": " << PQerrorMessage(conn) << '\n';
                     return;

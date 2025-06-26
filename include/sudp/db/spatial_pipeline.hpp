@@ -76,7 +76,7 @@ private:
         std::cout << "[DB-Spatial-pip] Fused " << fused.size() << " unique points\n";
         // Étape 2 : construire la requête SQL
         std::ostringstream query;
-        query << "INSERT INTO spatial_points "
+        query << "INSERT INTO spatial_point "
               << "(x, y, z, color_r, color_g, color_b, color_a, timestamp, nb_records) VALUES ";
 
         std::size_t count = 0;
@@ -89,7 +89,7 @@ private:
             if (++count != fused.size()) query << ",";
         }
 
-        query << " ON CONFLICT (x, y, z) DO UPDATE SET nb_records = spatial_points.nb_records + EXCLUDED.nb_records";
+        query << " ON CONFLICT (x, y, z) DO UPDATE SET nb_records = spatial_point.nb_records + EXCLUDED.nb_records";
 
         // Étape 3 : exécuter
         PGresult* res = PQexec(conn_, query.str().c_str());
