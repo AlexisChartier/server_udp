@@ -1,38 +1,17 @@
 networks:
   mapnet:
     external: true
-
+  
 services:
-  db: 
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ros_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
-    networks: [mapnet]
-
   map-server:
     build:
       context: .
       dockerfile: Dockerfile
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: password
+      DB_PASSWORD: pwd
       DB_NAME: ros_db
       UDP_PORT: 9000
     ports:
